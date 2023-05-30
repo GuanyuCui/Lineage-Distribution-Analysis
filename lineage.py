@@ -100,12 +100,6 @@ def get_data(region : str, start_date : str = '2019-12-20', end_date : str = '',
 			query_interval : int = 7, retry_times : int = 5, 
 			num_workers : int = 10,
 			cached : bool = True, is_collect_date : bool = True) -> pd.DataFrame:
-	# 确定地区名
-	region = '' if region == 'World' else region
-	
-	# 确定结束日期, 空字符串为默认今天
-	end_date = date.today() if (end_date == '' or end_date is None) else date.fromisoformat(end_date)
-	
 	# 缓存文件名
 	cache_file = 'data ' + region + ' ' + str(start_date) + ' ' + str(end_date) + '.csv'
 
@@ -115,7 +109,13 @@ def get_data(region : str, start_date : str = '2019-12-20', end_date : str = '',
 		print('Loaded from cache file.\n')
 		print('Done. #Total Sequences: {}\n'.format(len(data)))
 		return data
+
+	# 确定地区名
+	region = '' if region == 'World' else region
 	
+	# 确定结束日期, 空字符串为默认今天
+	end_date = date.today() if (end_date == '' or end_date is None) else date.fromisoformat(end_date)
+		
 	mgr = mp.Manager()
 	# 
 	input_list = mgr.list()
