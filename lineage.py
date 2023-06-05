@@ -100,9 +100,12 @@ def get_data(region : str, start_date : str = '2019-12-20', end_date : str = '',
 			query_interval : int = 7, retry_times : int = 5, 
 			num_workers : int = 10,
 			cached : bool = True, is_collect_date : bool = True) -> pd.DataFrame:
+	
+	# 确定结束日期, 空字符串为默认今天
+	end_date = date.today() if (end_date == '' or end_date is None) else date.fromisoformat(end_date)
+
 	# 缓存文件名
 	cache_file = 'data ' + region + ' ' + str(start_date) + ' ' + str(end_date) + '.csv'
-
 	# 如果有缓存文件, 直接读取
 	if osp.exists(cache_file):
 		data = pd.read_csv(cache_file)
@@ -113,9 +116,6 @@ def get_data(region : str, start_date : str = '2019-12-20', end_date : str = '',
 	# 确定地区名
 	region = '' if region == 'World' else region
 	
-	# 确定结束日期, 空字符串为默认今天
-	end_date = date.today() if (end_date == '' or end_date is None) else date.fromisoformat(end_date)
-		
 	mgr = mp.Manager()
 	# 
 	input_list = mgr.list()
@@ -170,7 +170,9 @@ def get_data(region : str, start_date : str = '2019-12-20', end_date : str = '',
 		except:
 			print('Warning: key {} does not found.'.format(key))
 	print('Done.')
-	
+
+	# 去重
+	data = data.drop_duplicates(subset = ['accession'])
 	data = data.reset_index(drop = True)
 	if cached:
 		data.to_csv(cache_file, index = False)
@@ -200,9 +202,9 @@ def update_data(region, cache_file = '', query_interval = 7, retry_times = 5, ca
 	new_cache_file = 'data ' + region + ' ' + str(start_date) + ' ' + str(end_date) + '.csv'
 
 	print('Querying recently collected sequences...')
-	new_data_collect = get_data(region = region, start_date = data['collectDate'].max(), end_date = str(end_date), query_interval = query_interval, retry_times = retry_times, cached = False, is_collect_date = True)
+	new_data_collect = get_data(region = region, start_date = str(date.fromisoformat(data['collectDate'].max()) - timedelta(days = 14)), end_date = str(end_date), query_interval = query_interval, retry_times = retry_times, cached = False, is_collect_date = True)
 	print('Querying recently submitted sequences...')
-	new_data_submit = get_data(region = region, start_date = data['submitDate'].max(), end_date = str(end_date), query_interval = query_interval, retry_times = retry_times, cached = False, is_collect_date = False)
+	new_data_submit = get_data(region = region, start_date = str(date.fromisoformat(data['submitDate'].max()) - timedelta(days = 14)), end_date = str(end_date), query_interval = query_interval, retry_times = retry_times, cached = False, is_collect_date = False)
 	
 	# 删除奇怪的换行
 	new_data_collect = new_data_collect.replace(r'\r+|\n+|\t+','', regex = True)
